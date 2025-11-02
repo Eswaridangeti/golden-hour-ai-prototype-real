@@ -26,6 +26,7 @@ export default function DemoPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isScrollingIntoView, setIsScrollingIntoView] = useState(false)
   const [emergencySent, setEmergencySent] = useState(false)
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -131,7 +132,24 @@ export default function DemoPage() {
     alert(`Dispatch sent for ${result.accidentType || "accident"}. Emergency services notified.`)
   }
 
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          })
+        },
+        (error) => {
+          console.log("[v0] Location error:", error.message)
+        },
+      )
+    }
+  }
+
   const sendEmergency = () => {
+    getUserLocation()
     setEmergencySent(true)
     setTimeout(() => setEmergencySent(false), 3000)
   }
@@ -368,7 +386,7 @@ export default function DemoPage() {
                     onClick={sendEmergency}
                     className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg transition md:col-span-2"
                   >
-                    Send Emergency
+                    Send Info to Nearby Hospital
                   </button>
                 </>
               )}
@@ -382,7 +400,15 @@ export default function DemoPage() {
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
               <h3 className="text-2xl font-bold mb-2">Emergency Sent</h3>
               <p className="text-foreground/70">
-                Emergency services have been notified and are responding to your location.
+                Hospital information sent successfully.
+                {userLocation && (
+                  <>
+                    <br />
+                    <span className="text-sm text-foreground/50">
+                      Location: {userLocation.latitude.toFixed(4)}°, {userLocation.longitude.toFixed(4)}°
+                    </span>
+                  </>
+                )}
               </p>
             </Card>
           </div>
