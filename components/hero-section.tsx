@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export function HeroSection() {
   return (
@@ -14,9 +15,11 @@ export function HeroSection() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-8">
-            Try Demo →
-          </Button>
+          <Link href="/demo">
+            <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-8">
+              Try Demo →
+            </Button>
+          </Link>
           <Button
             size="lg"
             variant="outline"

@@ -11,6 +11,7 @@ interface AnalysisResult {
   confidence: number
   passed: boolean
   details: string
+  accidentType?: string
   timestamp: Date
 }
 
@@ -24,6 +25,7 @@ export default function DemoPage() {
   const audioInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isScrollingIntoView, setIsScrollingIntoView] = useState(false)
+  const [emergencySent, setEmergencySent] = useState(false)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -41,33 +43,13 @@ export default function DemoPage() {
     return () => observer.disconnect()
   }, [result])
 
-  const blurFaceInImage = (image: HTMLImageElement): string => {
-    const canvas = document.createElement("canvas")
-    canvas.width = image.width
-    canvas.height = image.height
-    const ctx = canvas.getContext("2d")
-
-    if (ctx) {
-      ctx.filter = "blur(15px)"
-      ctx.drawImage(image, 0, 0)
-    }
-
-    return canvas.toDataURL()
-  }
-
   const handleFileSelect = (file: File) => {
     setSelectedFile(file)
 
     if (file.type.startsWith("image/")) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        const img = new Image()
-        img.crossOrigin = "anonymous"
-        img.onload = () => {
-          const blurredImageData = blurFaceInImage(img)
-          setPreview(blurredImageData)
-        }
-        img.src = reader.result as string
+        setPreview(reader.result as string)
       }
       reader.readAsDataURL(file)
     } else if (file.type.startsWith("video/")) {
@@ -124,10 +106,12 @@ export default function DemoPage() {
           confidence: data.confidence,
           passed,
           details: data.details,
+          accidentType: data.accidentType,
           timestamp: new Date(),
         })
       }
     } catch (error) {
+      console.log("[v0] Analysis error caught")
       setResult({
         type: null,
         confidence: 0,
@@ -138,6 +122,18 @@ export default function DemoPage() {
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  const sendDispatchImmediately = async () => {
+    if (!result?.passed) return
+    console.log("[v0] Sending dispatch for accident type:", result.accidentType)
+    // Placeholder for dispatch API call
+    alert(`Dispatch sent for ${result.accidentType || "accident"}. Emergency services notified.`)
+  }
+
+  const sendEmergency = () => {
+    setEmergencySent(true)
+    setTimeout(() => setEmergencySent(false), 3000)
   }
 
   return (
@@ -325,18 +321,13 @@ export default function DemoPage() {
                 </div>
               </div>
 
-              {/* Pass/Fail Status */}
+              {/* Accident Type */}
               <div
                 className="p-6 bg-foreground/5 rounded-lg border border-primary/20 hover:shadow-md transition-shadow animate-slide-up"
                 style={{ animationDelay: "0.3s" }}
               >
-                <p className="text-sm text-foreground/60 mb-2">Status</p>
-                <p className={`text-lg font-semibold ${result.passed ? "text-green-600" : "text-red-600"}`}>
-                  {result.passed ? "✓ Passed" : "✗ Failed"}
-                </p>
-                <p className="text-xs text-foreground/50 mt-2">
-                  {result.passed ? "Confidence ≥ 30%" : "Confidence < 30%"}
-                </p>
+                <p className="text-sm text-foreground/60 mb-2">Accident Type</p>
+                <p className="text-lg font-semibold capitalize">{result.accidentType || "Unknown"}</p>
               </div>
             </div>
 
@@ -353,17 +344,48 @@ export default function DemoPage() {
               Analyzed at {result.timestamp.toLocaleTimeString()}
             </div>
 
-            <button
-              onClick={() => {
-                setResult(null)
-                setSelectedFile(null)
-                setPreview(null)
-              }}
-              className="w-full mt-6 bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-lg transition"
-            >
-              Analyze Another
-            </button>
+            {/* Dispatch Button */}
+            <div className="grid md:grid-cols-2 gap-4 mt-6">
+              <button
+                onClick={() => {
+                  setResult(null)
+                  setSelectedFile(null)
+                  setPreview(null)
+                }}
+                className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-lg transition"
+              >
+                Analyze Another
+              </button>
+              {result.passed && (
+                <>
+                  <button
+                    onClick={sendDispatchImmediately}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg transition"
+                  >
+                    Send Dispatch Immediately
+                  </button>
+                  <button
+                    onClick={sendEmergency}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg transition md:col-span-2"
+                  >
+                    Send Emergency
+                  </button>
+                </>
+              )}
+            </div>
           </Card>
+        )}
+
+        {emergencySent && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="p-8 max-w-md text-center animate-scale-in">
+              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold mb-2">Emergency Sent</h3>
+              <p className="text-foreground/70">
+                Emergency services have been notified and are responding to your location.
+              </p>
+            </Card>
+          </div>
         )}
       </div>
 
